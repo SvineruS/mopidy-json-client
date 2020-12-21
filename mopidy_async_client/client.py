@@ -1,11 +1,11 @@
 import asyncio
 import logging
+from collections import defaultdict
 
 import websockets
 
 from . import mopidy_api
 from .messages import RequestMessage, ResponseMessage
-
 
 logger = logging.getLogger('mopidy_async_client')
 
@@ -86,7 +86,8 @@ class MopidyClient:
                 return
 
     async def _dispatch_event(self, event, event_data):
-        await self.listener.on_event(event, **event_data)
+        # noinspection PyProtectedMember
+        await self.listener._on_event(event, **event_data)
 
     async def __aenter__(self):
         return await self.connect()
@@ -97,42 +98,40 @@ class MopidyClient:
 
 class MopidyListener:
     EVENTS = (
-       'track_playback_paused',
-       'track_playback_resumed',
-       'track_playback_started',
-       'track_playback_ended',
-       'playback_state_changed',
-       'tracklist_changed',
-       'playlists_loaded',
-       'playlist_changed',
-       'playlist_deleted',
-       'options_changed',
-       'volume_changed',
-       'mute_changed',
-       'seeked',
-       'stream_title_changed',
-       'audio_message'  # extra event for gstreamer plugins like spectrum
+        'track_playback_paused',
+        'track_playback_resumed',
+        'track_playback_started',
+        'track_playback_ended',
+        'playback_state_changed',
+        'tracklist_changed',
+        'playlists_loaded',
+        'playlist_changed',
+        'playlist_deleted',
+        'options_changed',
+        'volume_changed',
+        'mute_changed',
+        'seeked',
+        'stream_title_changed',
+        'audio_message',  # extra event for gstreamer plugins like spectrum
+        '*'  # all events
     )
 
     def __init__(self):
-        self.bindings = {}
+        self.bindings = defaultdict(list)
 
-    async def on_event(self, event, **event_data):
-        if event in self.bindings:
-            for callback in self.bindings[event]:
-                await callback(**event_data)
+    async def _on_event(self, event, **event_data):
+        logging.info(f"event {event} happened")
+        for callback in self.bindings[event]:
+            await callback(**event_data)
+        for callback in self.bindings['*']:
+            await callback(event, **event_data)
 
     def bind(self, event, callback):
         assert event in self.EVENTS, 'Event {} does not exist'.format(event)
-        if event not in self.bindings:
-            self.bindings[event] = []
-
         if callback not in self.bindings[event]:
             self.bindings[event].append(callback)
 
     def unbind(self, event, callback):
-        if event not in self.bindings:
-            return
         for index, cb in enumerate(self.bindings[event]):
             if cb == callback:
                 self.bindings[event].pop(index)
