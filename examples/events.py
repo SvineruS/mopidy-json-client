@@ -3,11 +3,11 @@ import asyncio
 from mopidy_async_client import MopidyClient
 
 
-async def playback_started_handler(**data):
+async def playback_started_handler(data):
     print(data)
 
 
-async def all_events_handler(event, **data):
+async def all_events_handler(event, data):
     print(event, data)
 
 

@@ -56,15 +56,23 @@ class RequestMessage(object):
 class ResponseMessage(object):
     _on_event = None
     _on_result = None
+    _decoder = None
 
     @classmethod
-    def set_handlers(cls, on_msg_event=None, on_msg_result=None):
+    def set_settings(cls, on_msg_event=None, on_msg_result=None, parse_results=False):
         cls._on_event = on_msg_event
         cls._on_result = on_msg_result
 
+        if parse_results:
+            try:
+                from mopidy import models
+                cls._decoder = models.model_json_decoder
+            except ImportError:
+                raise Exception("if you want to parse results pls install mopidy (pip install mopidy)")
+
     @classmethod
     async def parse_json_message(cls, message):
-        msg_data = json.loads(message)
+        msg_data = json.loads(message, object_hook=cls._decoder)
 
         if 'jsonrpc' in msg_data:
             return await cls._json_message(msg_data)

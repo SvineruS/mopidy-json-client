@@ -15,16 +15,16 @@ import asyncio
 from mopidy_async_client import MopidyClient
 
 
-async def playback_started_handler(**data):
+async def playback_started_handler(data):
     print(data)
 
 
-async def all_events_handler(event, **data):
+async def all_events_handler(event, data):
     print(event, data)
 
 
 async def main1():
-    async with MopidyClient() as mopidy:  # close connection explicit
+    async with MopidyClient(url='ws://some_ip:6680/mopidy/ws') as mopidy:  # close connection explicit
         await mopidy.playback.play()
 
 
@@ -46,6 +46,23 @@ asyncio.run(main1())
 asyncio.run(main2())
 
 ```
+
+### Parse results
+
+You can specify `parse_results=True` in `MopidyClient` and get Mopidy objects instead of json dictionaries.
+To do this, you need to install Mopidy locally (only for importing models)
+
+```python
+async with MopidyClient(parse_results=True) as mopidy:
+    res = await mopidy.tracklist.get_tracks()
+    print(res)
+
+>>> [Track(date='2020-01-01', length=392533, name='audio.mp3', uri='file:///home/svin/Music/audio.mp3')]
+# instead of
+>>> [{'__model__': 'Track', 'uri': 'file:///home/svin/Music/audio.mp3', 'name': 'audio.mp3', 'date': '2020-01-01', 'length': 392533}]
+```
+
+
 
 ## Installation
 

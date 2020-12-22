@@ -12,7 +12,7 @@ logger = logging.getLogger('mopidy_async_client')
 
 class MopidyClient:
 
-    def __init__(self, ws_url='ws://localhost:6680/mopidy/ws', loop=None):
+    def __init__(self, url='ws://localhost:6680/mopidy/ws', loop=None, parse_results=False):
 
         self.listener = MopidyListener()
 
@@ -26,7 +26,7 @@ class MopidyClient:
 
         #
 
-        self.ws_url = ws_url
+        self.ws_url = url
 
         if loop is None:
             loop = asyncio.get_event_loop()
@@ -39,9 +39,10 @@ class MopidyClient:
         self._connected = False
         self._consumer_task = None
 
-        ResponseMessage.set_handlers(
+        ResponseMessage.set_settings(
             on_msg_event=self._dispatch_event,
-            on_msg_result=self._dispatch_result
+            on_msg_result=self._dispatch_result,
+            parse_results=parse_results
         )
 
     # Connection public functions
@@ -87,7 +88,7 @@ class MopidyClient:
 
     async def _dispatch_event(self, event, event_data):
         # noinspection PyProtectedMember
-        await self.listener._on_event(event, **event_data)
+        await self.listener._on_event(event, event_data)
 
     async def __aenter__(self):
         return await self.connect()
@@ -119,12 +120,12 @@ class MopidyListener:
     def __init__(self):
         self.bindings = defaultdict(list)
 
-    async def _on_event(self, event, **event_data):
+    async def _on_event(self, event, event_data):
         logging.info(f"event {event} happened")
         for callback in self.bindings[event]:
-            await callback(**event_data)
+            await callback(event_data)
         for callback in self.bindings['*']:
-            await callback(event, **event_data)
+            await callback(event, event_data)
 
     def bind(self, event, callback):
         assert event in self.EVENTS, 'Event {} does not exist'.format(event)
