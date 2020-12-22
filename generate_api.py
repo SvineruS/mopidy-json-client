@@ -45,10 +45,15 @@ def get_func_code(endpoint_name, method_name, method_info):
     def get_usage(param):
         return "{name}={name}, ".format(**param)
 
+    def get_deprecated():
+        for el in docs.split(".. deprecated::")[1:]:
+            _, desc, *_ = el.split("\n")
+            yield f"\n    # DEPRECATED {desc.strip()}"
+
     docs = method_info['description'].replace("\n\n", "\n").replace("\n", "\n        ")
     args = "".join([get_arg(p) for p in method_info['params']])
     usage = "".join([get_usage(p) for p in method_info['params']])
-    deprecated = "\n    # DEPRECATED" if ".. deprecated::" in docs else ""
+    deprecated = "".join(get_deprecated())
 
     return f'''{deprecated}
     async def {method_name}(self, {args}**options):

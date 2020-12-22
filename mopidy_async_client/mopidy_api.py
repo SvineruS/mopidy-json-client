@@ -208,7 +208,7 @@ class PlaybackController(_BaseController):
         """Pause playback."""
         return await self.mopidy_request('core.playback.pause', **options)
 
-    # DEPRECATED
+    # DEPRECATED The ``tl_track`` argument. Use ``tlid`` instead.
     async def play(self, tl_track=None, tlid=None, **options):
         """Play the given track, or if the given tl_track and tlid is
         :class:`None`, play the currently active track.
@@ -350,7 +350,7 @@ class PlaylistsController(_BaseController):
     
 class TracklistController(_BaseController):
 
-    # DEPRECATED
+    # DEPRECATED The ``tracks`` argument. Use ``uris``.
     async def add(self, tracks=None, at_position=None, uris=None, **options):
         """Add tracks to the tracklist.
         If ``uris`` is given instead of ``tracks``, the URIs are
@@ -378,7 +378,7 @@ class TracklistController(_BaseController):
         Triggers the :meth:`mopidy.core.CoreListener.tracklist_changed` event."""
         return await self.mopidy_request('core.tracklist.clear', **options)
 
-    # DEPRECATED
+    # DEPRECATED Use :meth:`get_eot_tlid` instead.
     async def eot_track(self, tl_track, **options):
         """The track that will be played after the given track.
         Not necessarily the same track as :meth:`next_track`.
@@ -510,7 +510,7 @@ class TracklistController(_BaseController):
         :type to_position: int"""
         return await self.mopidy_request('core.tracklist.move', start=start, end=end, to_position=to_position, **options)
 
-    # DEPRECATED
+    # DEPRECATED Use :meth:`get_next_tlid` instead.
     async def next_track(self, tl_track, **options):
         """The track that will be played if calling
         :meth:`mopidy.core.PlaybackController.next()`.
@@ -525,7 +525,7 @@ class TracklistController(_BaseController):
         :rtype: :class:`mopidy.models.TlTrack` or :class:`None`"""
         return await self.mopidy_request('core.tracklist.next_track', tl_track=tl_track, **options)
 
-    # DEPRECATED
+    # DEPRECATED Use :meth:`get_previous_tlid` instead.
     async def previous_track(self, tl_track, **options):
         """Returns the track that will be played if calling
         :meth:`mopidy.core.PlaybackController.previous()`.

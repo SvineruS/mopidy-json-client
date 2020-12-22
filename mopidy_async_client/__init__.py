@@ -2,7 +2,7 @@
 
 # Fork of https://github.com/ismailof/mopidy-json-client by ismailof
 __author__ = 'svinerus (svinerus@gmail.com)'
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 
 from .client import MopidyClient
 
