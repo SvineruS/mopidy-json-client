@@ -48,16 +48,20 @@ class MopidyClient:
     # Connection public functions
 
     async def connect(self):
-        if self.wsa:
-            raise Exception("Connection already open")
+        if self.is_connected():
+            raise RuntimeWarning("Connection already open")
         self.wsa = await websockets.connect(self.ws_url, loop=self._loop)
         self._consumer_task = self._loop.create_task(self._ws_consumer())
         return self
 
     async def disconnect(self):
-        self._consumer_task.cancel()
-        await self.wsa.close()
-        self.wsa = None
+        if not self.is_connected():
+            self._consumer_task.cancel()
+            await self.wsa.close()
+            self.wsa = None
+
+    def is_connected(self):
+        return self.wsa is not None
 
     #
 
