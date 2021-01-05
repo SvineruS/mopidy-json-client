@@ -10,3 +10,5 @@ home-page = "https://github.com/SvineruS/mopidy-async-client"
 description-file = "README.md"
 requires-python = ">=3.7"
 dist-name = "mopidy-async-client"
+keywords = "mopidy, mpd, async, asyncio, client, player"
+requires = ["websockets"]
