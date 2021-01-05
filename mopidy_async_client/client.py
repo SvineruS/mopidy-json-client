@@ -86,13 +86,13 @@ class MopidyClient:
     async def _dispatch_result(self, id_msg, result):
         for request in self._request_queue:
             if request.id_msg == id_msg:
-                await request.callback(result)
+                self._loop.create_task(request.callback(result))
                 self._request_queue.remove(request)
                 return
 
     async def _dispatch_event(self, event, event_data):
         # noinspection PyProtectedMember
-        await self.listener._on_event(event, event_data)
+        self._loop.create_task(self.listener._on_event(event, event_data))
 
     async def __aenter__(self):
         return await self.connect()
