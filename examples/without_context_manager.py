@@ -5,7 +5,6 @@ from mopidy_async_client import MopidyClient
 
 async def main():
     mopidy = await MopidyClient().connect()
-    await mopidy.connect()
 
     # your app logic
     for i in range(10):
