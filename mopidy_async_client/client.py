@@ -70,7 +70,7 @@ class MopidyClient:
         self._request_queue.append(request)
 
         try:
-            await self.wsa.send(request.json_message)
+            await self.wsa.send(request.to_json())
             return await request.wait_for_result()
         except Exception as ex:
             logger.exception(ex)
@@ -86,7 +86,7 @@ class MopidyClient:
     async def _dispatch_result(self, id_msg, result):
         for request in self._request_queue:
             if request.id_msg == id_msg:
-                self._loop.create_task(request.callback(result))
+                self._loop.create_task(request.unlock(result))
                 self._request_queue.remove(request)
                 return
 

@@ -1,40 +1,32 @@
 import asyncio
-import time
 import json
 from itertools import count
-
-
-class RequestTimeoutError(Exception):
-    def __init__(self, method, timeout, *args):
-        super(RequestTimeoutError, self).__init__(*args)
-        self.method = method
-        self.timeout = timeout
-
-    def __repr__(self):
-        return '[TIMEOUT] On request: {0} ({1:d} secs)'.format(self.method, self.timeout)
 
 
 class RequestMessage(object):
     msg_counter = count(0)
 
-    def __init__(self, method, on_result=None, timeout=20, **params):
+    def __init__(self, method, timeout=20, **params):
         self.id_msg = next(self.msg_counter)
         self.method = method
         self.params = params
-        self.callback = on_result if on_result else self.unlock
 
-        self._locked = False if on_result or not timeout else True
-        self._start_time = time.time()
         self._timeout = timeout
-
-        self.result = None
-        self.json_message = self.compose_json_msg()
+        self._on_result_event = asyncio.Event()
+        self._result = None
 
     async def unlock(self, result):
-        self.result = result
-        self._locked = False
+        self._result = result
+        self._on_result_event.set()
 
-    def compose_json_msg(self):
+    async def wait_for_result(self):
+        await asyncio.wait_for(
+            self._on_result_event.wait(),
+            self._timeout
+        )
+        return self._result
+
+    def to_json(self):
         return json.dumps({
             'jsonrpc': '2.0',
             'id': self.id_msg,
@@ -42,15 +34,8 @@ class RequestMessage(object):
             'params': self.params
         })
 
-    async def wait_for_result(self):
-        while self._locked:
-            if time.time() - self._start_time > self._timeout:
-                raise RequestTimeoutError(self.method, self._timeout)
-            await asyncio.sleep(0.1)
-        return self.result
-
-    def __repr__(self):
-        return "<RequestMessage id:{0.id_msg} method:'{0.method}'>".format(self)
+    def __str__(self):
+        return f"<RequestMessage id:{self.id_msg} method:'{self.method}' params:{self.params}>"
 
 
 class ResponseMessage(object):
@@ -68,7 +53,7 @@ class ResponseMessage(object):
                 from mopidy import models
                 cls._decoder = models.model_json_decoder
             except ImportError:
-                raise Exception("if you want to parse results pls install mopidy (pip install mopidy)")
+                raise ImportError("if you want to parse results pls install mopidy (pip install mopidy)")
 
     @classmethod
     async def parse_json_message(cls, message):
