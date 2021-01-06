@@ -12,7 +12,8 @@ logger = logging.getLogger('mopidy_async_client')
 
 class MopidyClient:
 
-    def __init__(self, url='ws://localhost:6680/mopidy/ws', loop=None, parse_results=False):
+    def __init__(self, url='ws://localhost:6680/mopidy/ws', loop=None, parse_results=False,
+                 reconnect_attempts=5, reconnect_timeout=20):
 
         self.listener = MopidyListener()
 
@@ -36,8 +37,10 @@ class MopidyClient:
 
         self.wsa = None
         self._request_queue = []
-        self._connected = False
         self._consumer_task = None
+
+        self._reconnect_attempts = reconnect_attempts
+        self._reconnect_timeout = reconnect_timeout
 
         ResponseMessage.set_settings(
             on_msg_event=self._dispatch_event,
@@ -52,16 +55,36 @@ class MopidyClient:
             raise RuntimeWarning("Connection already open")
         self.wsa = await websockets.connect(self.ws_url, loop=self._loop)
         self._consumer_task = self._loop.create_task(self._ws_consumer())
+        logger.info("Connected")
         return self
 
     async def disconnect(self):
-        if not self.is_connected():
-            self._consumer_task.cancel()
+        logger.info("Connection closed")
+        if self.is_connected():
             await self.wsa.close()
-            self.wsa = None
+        if self._consumer_task is not None:
+            self._consumer_task.cancel()
+        self._request_queue.clear()
+        self._consumer_task = None
+        self.wsa = None
+
+    async def _reconnect(self):
+        async def _reconnect_():
+            await self.disconnect()
+            for i in range(self._reconnect_attempts - 1):
+                try:
+                    logging.info(f"try to reconnect. attempt {i} / {self._reconnect_attempts}")
+                    await self.connect()
+                    return
+                except OSError:
+                    logging.info(f"reconnect failed. new attempt in {self._reconnect_timeout} sec")
+                    await asyncio.sleep(self._reconnect_timeout)
+            await self.connect()  # not catching last attempt
+
+        self._loop.create_task(_reconnect_())  # this task will be closed so creating new one
 
     def is_connected(self):
-        return self.wsa is not None
+        return self.wsa and self.wsa.open
 
     #
 
@@ -72,16 +95,22 @@ class MopidyClient:
         try:
             await self.wsa.send(request.to_json())
             return await request.wait_for_result()
+        except websockets.ConnectionClosed:
+            await self._reconnect()
+            await self._request(method, **kwargs)
         except Exception as ex:
             logger.exception(ex)
             return None
 
     async def _ws_consumer(self):
-        async for message in self.wsa:
-            try:
-                await ResponseMessage.parse_json_message(message)
-            except Exception as ex:
-                logger.exception(ex)
+        try:
+            async for message in self.wsa:
+                try:
+                    await ResponseMessage.parse_json_message(message)
+                except Exception as ex:
+                    logger.exception(ex)
+        except websockets.ConnectionClosed:
+            await self._reconnect()
 
     async def _dispatch_result(self, id_msg, result):
         for request in self._request_queue:
@@ -125,7 +154,7 @@ class MopidyListener:
         self.bindings = defaultdict(list)
 
     async def _on_event(self, event, event_data):
-        logging.info(f"event {event} happened")
+        logger.info(f"event {event} happened")
         for callback in self.bindings[event]:
             await callback(event_data)
         for callback in self.bindings['*']:
