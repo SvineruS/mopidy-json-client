@@ -96,6 +96,7 @@ class MopidyClient:
         self._request_queue.append(request)
 
         try:
+            logging.info(f"sending request {request}")
             await self.wsa.send(request.to_json())
             return await request.wait_for_result()
         except websockets.ConnectionClosed:
@@ -157,7 +158,7 @@ class MopidyListener:
         self.bindings = defaultdict(list)
 
     async def _on_event(self, event, event_data):
-        logger.info(f"event {event} happened")
+        logger.debug(f"event {event} happened")
         for callback in self.bindings[event]:
             await callback(event_data)
         for callback in self.bindings['*']:
