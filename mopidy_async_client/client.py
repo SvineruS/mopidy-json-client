@@ -89,6 +89,9 @@ class MopidyClient:
     #
 
     async def _request(self, method, **kwargs):
+        if not self.is_connected():
+            raise RuntimeError("Connect before making requests!")
+
         request = RequestMessage(method, **kwargs)
         self._request_queue.append(request)
 
