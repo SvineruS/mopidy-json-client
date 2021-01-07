@@ -96,7 +96,7 @@ class MopidyClient:
         self._request_queue.append(request)
 
         try:
-            logging.info(f"sending request {request}")
+            logging.debug(f"sending request {request}")
             await self.wsa.send(request.to_json())
             return await request.wait_for_result()
         except websockets.ConnectionClosed:
