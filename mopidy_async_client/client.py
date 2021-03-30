@@ -71,7 +71,8 @@ class MopidyClient:
     async def _reconnect(self):
         async def _reconnect_():
             await self.disconnect()
-            for i in range(self._reconnect_attempts - 1):
+            i = 1   # start with one, because we don't want to catch the last attempt
+            while self._reconnect_attempts is None or i < self._reconnect_attempts:
                 try:
                     logging.info(f"try to reconnect. attempt {i} / {self._reconnect_attempts}")
                     await self.connect()
@@ -79,6 +80,8 @@ class MopidyClient:
                 except OSError:
                     logging.info(f"reconnect failed. new attempt in {self._reconnect_timeout} sec")
                     await asyncio.sleep(self._reconnect_timeout)
+                if self._reconnect_attempts is not None:
+                    i += 1
             await self.connect()  # not catching last attempt
 
         self._loop.create_task(_reconnect_())  # this task will be closed so creating new one
