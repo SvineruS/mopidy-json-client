@@ -73,11 +73,11 @@ class MopidyClient:
             await self.disconnect()
             for i in range(self._reconnect_attempts - 1):
                 try:
-                    logging.info(f"try to reconnect. attempt {i} / {self._reconnect_attempts}")
+                    logger.info(f"try to reconnect. attempt {i} / {self._reconnect_attempts}")
                     await self.connect()
                     return
                 except OSError:
-                    logging.info(f"reconnect failed. new attempt in {self._reconnect_timeout} sec")
+                    logger.info(f"reconnect failed. new attempt in {self._reconnect_timeout} sec")
                     await asyncio.sleep(self._reconnect_timeout)
             await self.connect()  # not catching last attempt
 
@@ -96,7 +96,7 @@ class MopidyClient:
         self._request_queue.append(request)
 
         try:
-            logging.debug(f"sending request {request}")
+            logger.debug(f"sending request {request}")
             await self.wsa.send(request.to_json())
             return await request.wait_for_result()
         except websockets.ConnectionClosed:
