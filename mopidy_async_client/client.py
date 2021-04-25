@@ -104,6 +104,8 @@ class MopidyClient:
         except websockets.ConnectionClosed:
             await self._reconnect()
             await self._request(method, **kwargs)
+        except asyncio.TimeoutError:
+            logger.warning("Timeout waiting for request %s", request)
         except Exception as ex:
             logger.exception(ex)
             return None
