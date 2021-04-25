@@ -39,7 +39,7 @@ class MopidyClient:
         self._request_queue = []
         self._consumer_task = None
 
-        self._reconnect_attempts = reconnect_attempts
+        self._reconnect_attempts = reconnect_attempts or sys.maxsize
         self._reconnect_timeout = reconnect_timeout
 
         ResponseMessage.set_settings(
