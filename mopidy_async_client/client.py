@@ -73,11 +73,12 @@ class MopidyClient:
             await self.disconnect()
             i = 0
             while self._reconnect_attempts is None or i < self._reconnect_attempts:
-                if self._reconnect_attempts is not None:
+                if self._reconnect_attempts is None:
+                    logger.info("try to reconnect.")
+                else:
                     i += 1  # start with one, because we don't want to catch the last attempt
                     logger.info("try to reconnect. attempt %s / %s", i, self._reconnect_attempts)
-                else:
-                    logger.info("try to reconnect.")
+
                 try:
                     await self.connect()
                     return
