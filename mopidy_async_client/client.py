@@ -71,6 +71,7 @@ class MopidyClient:
     async def _reconnect(self):
         async def _reconnect_():
             await self.disconnect()
+            i = 0
             while self._reconnect_attempts is None or i < self._reconnect_attempts:
                 if self._reconnect_attempts is not None:
                     i += 1  # start with one, because we don't want to catch the last attempt
