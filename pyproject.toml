@@ -1,3 +1,12 @@
+[project]
+name = "Mopidy-Async-Client"
+version = "0.6.4"
+license = "GNU General Public License, version 2"
+readme = "README.md"
+python = "^3.7"
+homepage = "https://github.com/svinerus/mopidy-async-client"
+repository = "https://github.com/svinerus/mopidy-async-client"
+
 [build-system]
 requires = ["flit_core >=2,<4"]
 build-backend = "flit_core.buildapi"
